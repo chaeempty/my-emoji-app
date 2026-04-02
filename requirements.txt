@@ -1,5 +1,5 @@
 streamlit
 openai
-rembg
+rembg[cpu]
 pillow
 requests
