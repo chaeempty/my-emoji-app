@@ -5,13 +5,13 @@ import io
 import requests
 
 # 1. API 키 설정 (본인의 sk-로 시작하는 키를 넣으세요)
-client = OpenAI(api_key="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") 
+client = OpenAI(api_key="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") 
 
 st.set_page_config(page_title="PPT Emoji Maker", layout="wide")
 
 # 사이트 제목 및 설명
-st.title("🎨 PPT 커스텀 이모지 생성기")
-st.write("광고 제안서 톤앤매너에 맞는 아이콘을 생성하세요. (배경 제거 제외 버전)")
+st.title("🎨 커스텀 이모지 생성기")
+st.write("광고 제안서 톤앤매너에 맞는 아이콘을 생성하세요.")
 
 # 스타일 설정 (기획하신 4가지 스타일)
 style_prompts = {
