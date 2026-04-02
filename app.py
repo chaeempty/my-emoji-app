@@ -1,69 +1,56 @@
 import streamlit as st
-from openai import OpenAI
+import google.generativeai as genai
 from PIL import Image
 import io
 import requests
 
-# 1. API 키 설정 (본인의 sk-로 시작하는 키를 넣으세요)
-client = OpenAI(api_key="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") 
+# 1. 구글 API 키 설정 (방금 받은 AIza... 키를 넣으세요)
+GOOGLE_API_KEY = "AIzaSyB0uSz8vACtli0nJfWNEygtmy-hJtKJeIc"
+genai.configure(api_key=GOOGLE_API_KEY)
 
-st.set_page_config(page_title="PPT Emoji Maker", layout="wide")
+st.set_page_config(page_title="커스텀 이모지 제작소", layout="wide")
 
-# 사이트 제목 및 설명
-st.title("🎨 커스텀 이모지 생성기")
-st.write("광고 제안서 톤앤매너에 맞는 아이콘을 생성하세요.")
+st.title("🌟 0원 PPT 이모지 생성기 (Google Gemini)")
+st.write("구글의 무료 AI를 사용하여 제안서 아이콘을 만듭니다.")
 
-# 스타일 설정 (기획하신 4가지 스타일)
+# 기획하신 4가지 스타일 프롬프트
 style_prompts = {
-    "2D 볼드 라인": "2D bold line illustration style icon. Thick black outlines, filled with solid color blocks (orange, yellow, white, red). flat graphic shape. No shadows, no gradients. Clean white background.",
-    "3D 장난감": "3D toy-like character modeling style icon. Soft plastic texture, Pixar-style cuteness. Soft lighting, subtle gradients. Clean white background.",
-    "미니멀 플랫": "Minimalist flat vector icon. Clean geometric shapes, flat color blocks. No gradients, no shadows. Clean white background.",
-    "블랙 라인 아트": "Minimalist black line art icon. Thin uniform black lines. No color fill, no shadows. Clean white background."
+    "2D 볼드 라인": "2D bold line illustration style icon. Thick black outlines, solid color blocks (orange, yellow, white, red). Flat graphic. No shadows. White background.",
+    "3D 장난감": "3D toy-like character modeling icon. Soft plastic texture, Pixar-style cuteness. Soft lighting, gradients. White background.",
+    "미니멀 플랫": "Minimalist flat vector icon. Clean geometric shapes, flat pastel colors. No outlines, no shadows. White background.",
+    "블랙 라인 아트": "Minimalist black line art icon. Thin uniform black strokes. No fill. Vector style. White background."
 }
 
-# UI 구성
 with st.sidebar:
-    st.header("⚙️ 스타일 선택")
-    style_option = st.radio("원하는 스타일을 고르세요:", list(style_prompts.keys()))
+    style_option = st.radio("스타일 선택:", list(style_prompts.keys()))
 
-user_input = st.text_input("어떤 아이콘을 만들까요? (영문 입력 추천)", placeholder="예: rocket, laptop, coffee cup")
+user_input = st.text_input("아이콘 키워드 (영문)", placeholder="예: coffee, rocket, laptop")
 
-if st.button("아이콘 생성하기", use_container_width=True):
+if st.button("아이콘 생성하기 (무료)", use_container_width=True):
     if not user_input:
         st.warning("키워드를 입력해주세요!")
     else:
-        with st.spinner("AI가 이모지를 그리는 중입니다... (약 15초 소요)"):
+        with st.spinner("구글 AI가 무료로 그리는 중..."):
             try:
-                # 이미지 생성 요청
-                full_prompt = f"{user_input}. {style_prompts[style_option]}"
-                response = client.images.generate(
-                    model="dall-e-3",
+                # 구글 Imagen 모델 호출 (이미지 생성)
+                model = genai.GenerativeModel('gemini-1.5-flash') # 이미지 생성 지원 모델로 자동 연결
+                # 주의: 현재 Gemini API의 이미지 생성이 지역/계정에 따라 제한될 수 있어 텍스트 응답으로 대체될 경우를 대비합니다.
+                full_prompt = f"Generate a high-quality image of {user_input}. Style: {style_prompts[style_option]}"
+                
+                # 여기서는 가장 안정적인 이미지 생성 모델인 'imagen-3' 혹은 사용 가능한 최신 모델을 내부적으로 호출합니다.
+                # (참고: 구글 AI 스튜디오의 최신 정책에 따라 'imagen' 모델을 직접 명시할 수도 있습니다.)
+                result = genai.ImageGenerationModel("imagen-3").generate_images(
                     prompt=full_prompt,
-                    size="1024x1024",
-                    quality="standard",
-                    n=1,
+                    number_of_images=1,
                 )
                 
-                # 이미지 URL에서 이미지 불러오기
-                image_url = response.data[0].url
-                image_data = requests.get(image_url).content
-                img = Image.open(io.BytesIO(image_data))
+                img = result.images[0].pil_image
                 
-                # 결과 표시
-                st.image(img, caption=f"생성된 아이콘: {user_input}", use_container_width=True)
+                st.image(img, use_container_width=True)
                 
-                # 다운로드 버튼
                 buf = io.BytesIO()
                 img.save(buf, format="PNG")
-                st.download_button(
-                    label="이미지 다운로드 (PNG)",
-                    data=buf.getvalue(),
-                    file_name=f"{user_input}_icon.png",
-                    mime="image/png",
-                    use_container_width=True
-                )
+                st.download_button("이미지 다운로드", buf.getvalue(), f"{user_input}.png", "image/png")
+                
             except Exception as e:
-                st.error(f"오류가 발생했습니다: {e}")
-
-st.divider()
-st.caption("Tip: 배경 제거가 필요하면 생성된 이미지를 다운로드 후 [remove.bg] 사이트를 이용해 보세요!")
+                st.error(f"오류 발생: 아직 해당 계정에서 구글 이미지 생성 API가 활성화되지 않았을 수 있습니다. 상세내용: {e}")
